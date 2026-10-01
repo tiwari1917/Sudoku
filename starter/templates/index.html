@@ -1,18 +1,72 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sudoku Game</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <h1>Sudoku Game</h1>
-  <div id="sudoku-board"></div>
-  <div class="controls">
-    <button id="new-game">New Game</button>
-    <button id="check-solution">Check Solution</button>
-    <span id="message"></span>
-  </div>
+  <main class="game-shell">
+    <header class="page-header">
+      <p class="eyebrow">The daily number puzzle</p>
+      <h1>Sudoku <span>Game</span></h1>
+      <p class="intro">A quiet moment of logic. Fill the grid, one number at a time.</p>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch color theme">Dark mode</button>
+    </header>
+
+    <section class="game-surface" aria-label="Sudoku puzzle">
+      <div class="board-heading">
+        <span class="board-label">Puzzle board</span>
+        <span class="board-size">9 <span aria-hidden="true">×</span> 9</span>
+      </div>
+      <div class="game-status" aria-label="Game status">
+        <span>Time <strong id="timer">00:00</strong></span>
+        <span>Hints <strong id="hint-count">0</strong></span>
+      </div>
+      <div class="board-frame">
+        <div id="sudoku-board" role="grid" aria-label="Sudoku board"></div>
+      </div>
+      <div class="controls">
+        <div class="difficulty-control">
+          <label for="difficulty">Difficulty</label>
+          <select id="difficulty" name="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <button id="new-game" class="button button-primary" type="button">New Game</button>
+        <button id="check-solution" class="button button-secondary" type="button">Check Solution</button>
+        <button id="hint-button" class="button button-hint" type="button">Hint</button>
+        <span id="message" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+    <section class="score-panel" aria-labelledby="scores-title">
+      <div class="score-heading">
+        <div>
+          <p class="eyebrow">Personal bests</p>
+          <h2 id="scores-title">Top 10 fastest times</h2>
+        </div>
+        <span class="score-mark" aria-hidden="true">★</span>
+      </div>
+      <form id="score-entry" class="score-entry" hidden>
+        <label for="player-name">Add your time</label>
+        <div class="score-entry-fields">
+          <input id="player-name" name="player-name" maxlength="24" autocomplete="name" placeholder="Your name" required>
+          <button class="button button-primary" type="submit">Save score</button>
+        </div>
+      </form>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Rank</th><th>Name</th><th>Time</th><th>Level</th><th>Hints</th></tr></thead>
+          <tbody id="score-list"></tbody>
+        </table>
+      </div>
+      <p id="empty-scores" class="empty-scores">Solve a puzzle to make the list.</p>
+    </section>
+    <footer class="page-footer">Take your time. Every puzzle has a solution.</footer>
+  </main>
   <script src="/static/main.js"></script>
 </body>
 </html>

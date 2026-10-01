@@ -48,10 +48,64 @@ def remove_cells(board, clues):
             board[row][col] = EMPTY
             attempts -= 1
 
+
+def count_solutions(board, limit=2):
+    """Count solutions up to limit, using the most constrained empty cell."""
+    best_cell = None
+    best_candidates = None
+
+    for row in range(SIZE):
+        for col in range(SIZE):
+            if board[row][col] != EMPTY:
+                continue
+            candidates = [
+                value for value in range(1, SIZE + 1)
+                if is_safe(board, row, col, value)
+            ]
+            if not candidates:
+                return 0
+            if best_candidates is None or len(candidates) < len(best_candidates):
+                best_cell = (row, col)
+                best_candidates = candidates
+                if len(candidates) == 1:
+                    break
+        if best_candidates is not None and len(best_candidates) == 1:
+            break
+
+    if best_cell is None:
+        return 1
+
+    row, col = best_cell
+    solutions = 0
+    for candidate in best_candidates:
+        board[row][col] = candidate
+        solutions += count_solutions(board, limit - solutions)
+        board[row][col] = EMPTY
+        if solutions >= limit:
+            break
+    return solutions
+
+
 def generate_puzzle(clues=35):
+    if not 17 <= clues <= SIZE * SIZE:
+        raise ValueError("clues must be between 17 and 81")
+
     board = create_empty_board()
     fill_board(board)
     solution = deep_copy(board)
-    remove_cells(board, clues)
+
+    cells = [(row, col) for row in range(SIZE) for col in range(SIZE)]
+    random.shuffle(cells)
+    removed = 0
+    for row, col in cells:
+        if SIZE * SIZE - removed <= clues:
+            break
+        value = board[row][col]
+        board[row][col] = EMPTY
+        if count_solutions(board) == 1:
+            removed += 1
+        else:
+            board[row][col] = value
+
     puzzle = deep_copy(board)
     return puzzle, solution
