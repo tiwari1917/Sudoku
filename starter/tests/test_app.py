@@ -25,6 +25,9 @@ def test_home_page_renders_sudoku_controls(client):
     assert response.status_code == 200
     assert b"sudoku-board" in response.data
     assert b"difficulty" in response.data
+    assert b'<option value="easy">Easy</option>' in response.data
+    assert b'<option value="medium" selected>Medium</option>' in response.data
+    assert b'<option value="hard">Hard</option>' in response.data
     assert b"check-solution" in response.data
 
 
@@ -37,6 +40,24 @@ def test_new_game_returns_difficulty_and_valid_unique_puzzle(client):
     assert payload["difficulty"] == "easy"
     assert sum(value != sudoku_logic.EMPTY for row in puzzle for value in row) >= 40
     assert sudoku_logic.count_solutions(sudoku_logic.deep_copy(puzzle)) == 1
+
+
+def test_count_solutions_rejects_conflicting_clues():
+    board = sudoku_logic.create_empty_board()
+    board[0][0] = 1
+    board[0][1] = 1
+
+    assert sudoku_logic.count_solutions(board) == 0
+
+
+def test_remove_cells_preserves_unique_solution():
+    _, solution = sudoku_logic.generate_puzzle(81)
+    puzzle = sudoku_logic.deep_copy(solution)
+
+    sudoku_logic.remove_cells(puzzle, 40)
+
+    assert sum(value != sudoku_logic.EMPTY for row in puzzle for value in row) >= 40
+    assert sudoku_logic.count_solutions(puzzle) == 1
 
 
 def test_new_game_rejects_unknown_difficulty(client):
@@ -88,6 +109,40 @@ def test_hint_returns_correct_value_for_empty_cell(client):
     assert puzzle[hint["row"]][hint["col"]] == sudoku_logic.EMPTY
     assert hint["value"] == game["solution"][hint["row"]][hint["col"]]
     assert hint["hints"] == 1
+
+
+def test_hint_rejects_a_stale_board_that_omits_a_revealed_cell(client):
+    client.get("/new?difficulty=easy")
+    with client.session_transaction() as browser_session:
+        game = sudoku_app.GAMES[browser_session["game_id"]]
+    stale_board = sudoku_logic.deep_copy(game["puzzle"])
+
+    first_response = client.post("/hint", json={"board": stale_board})
+    first = first_response.get_json()
+    second_response = client.post("/hint", json={"board": stale_board})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 400
+    assert "Hinted cells cannot be changed." in second_response.get_json()["error"]
+    assert game["hints"] == 1
+    assert first["value"] == game["solution"][first["row"]][first["col"]]
+
+
+def test_consecutive_hints_reveal_distinct_correct_cells_and_increment_count(client):
+    client.get("/new?difficulty=easy")
+    with client.session_transaction() as browser_session:
+        game = sudoku_app.GAMES[browser_session["game_id"]]
+    board = sudoku_logic.deep_copy(game["puzzle"])
+
+    first = client.post("/hint", json={"board": board}).get_json()
+    board[first["row"]][first["col"]] = first["value"]
+    second = client.post("/hint", json={"board": board}).get_json()
+
+    assert (first["row"], first["col"]) != (second["row"], second["col"])
+    assert first["value"] == game["solution"][first["row"]][first["col"]]
+    assert second["value"] == game["solution"][second["row"]][second["col"]]
+    assert first["hints"] == 1
+    assert second["hints"] == 2
 
 
 def test_hint_locks_revealed_cell(client):

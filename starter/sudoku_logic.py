@@ -40,16 +40,59 @@ def fill_board(board):
     return True
 
 def remove_cells(board, clues):
-    attempts = SIZE * SIZE - clues
-    while attempts > 0:
-        row = random.randrange(SIZE)
-        col = random.randrange(SIZE)
-        if board[row][col] != EMPTY:
-            board[row][col] = EMPTY
-            attempts -= 1
+    if not 17 <= clues <= SIZE * SIZE:
+        raise ValueError("clues must be between 17 and 81")
+    if sum(value != EMPTY for row in board for value in row) != SIZE * SIZE:
+        raise ValueError("board must be a complete solution")
+    if count_solutions(board) != 1:
+        raise ValueError("board must be a valid solution")
+
+    cells = [(row, col) for row in range(SIZE) for col in range(SIZE)]
+    random.shuffle(cells)
+    removed = 0
+    for row, col in cells:
+        if SIZE * SIZE - removed <= clues:
+            break
+        value = board[row][col]
+        board[row][col] = EMPTY
+        if count_solutions(board) == 1:
+            removed += 1
+        else:
+            board[row][col] = value
 
 
-def count_solutions(board, limit=2):
+def _has_consistent_clues(board):
+    if (
+        not isinstance(board, list)
+        or len(board) != SIZE
+        or any(not isinstance(row, list) or len(row) != SIZE for row in board)
+    ):
+        return False
+
+    rows = [set() for _ in range(SIZE)]
+    columns = [set() for _ in range(SIZE)]
+    boxes = [set() for _ in range(SIZE)]
+    for row in range(SIZE):
+        for col in range(SIZE):
+            value = board[row][col]
+            if (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or not 0 <= value <= SIZE
+            ):
+                return False
+            if value == EMPTY:
+                continue
+            box = (row // 3) * 3 + col // 3
+            if value in rows[row] or value in columns[col] or value in boxes[box]:
+                return False
+            rows[row].add(value)
+            columns[col].add(value)
+            boxes[box].add(value)
+    return True
+
+
+def _count_solutions(board, limit):
     """Count solutions up to limit, using the most constrained empty cell."""
     best_cell = None
     best_candidates = None
@@ -79,11 +122,18 @@ def count_solutions(board, limit=2):
     solutions = 0
     for candidate in best_candidates:
         board[row][col] = candidate
-        solutions += count_solutions(board, limit - solutions)
+        solutions += _count_solutions(board, limit - solutions)
         board[row][col] = EMPTY
         if solutions >= limit:
             break
     return solutions
+
+
+def count_solutions(board, limit=2):
+    """Count valid solutions up to limit; contradictory clues have no solutions."""
+    if limit < 1 or not _has_consistent_clues(board):
+        return 0
+    return _count_solutions(board, limit)
 
 
 def generate_puzzle(clues=35):
@@ -91,21 +141,11 @@ def generate_puzzle(clues=35):
         raise ValueError("clues must be between 17 and 81")
 
     board = create_empty_board()
-    fill_board(board)
+    if not fill_board(board):
+        raise RuntimeError("Could not generate a complete Sudoku solution.")
     solution = deep_copy(board)
 
-    cells = [(row, col) for row in range(SIZE) for col in range(SIZE)]
-    random.shuffle(cells)
-    removed = 0
-    for row, col in cells:
-        if SIZE * SIZE - removed <= clues:
-            break
-        value = board[row][col]
-        board[row][col] = EMPTY
-        if count_solutions(board) == 1:
-            removed += 1
-        else:
-            board[row][col] = value
+    remove_cells(board, clues)
 
     puzzle = deep_copy(board)
     return puzzle, solution

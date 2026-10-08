@@ -78,7 +78,7 @@ def give_hint():
         (row, col)
         for row in range(sudoku_logic.SIZE)
         for col in range(sudoku_logic.SIZE)
-        if board[row][col] == sudoku_logic.EMPTY
+        if board[row][col] == sudoku_logic.EMPTY and (row, col) not in game["revealed"]
     ]
     if not empty_cells:
         return jsonify({"error": "There are no empty cells to hint."}), 400

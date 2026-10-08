@@ -3,7 +3,7 @@
   --page: #edf3f0;
   --paper: #ffffff;
   --ink: #20342e;
-  --muted: #71837b;
+  --muted: #5f7068;
   --line: #d5dfda;
   --line-strong: #36594c;
   --cell: #ffffff;
@@ -96,7 +96,7 @@ h1 span { color: var(--green); }
 .sudoku-cell:focus { position: relative; z-index: 1; outline: 2px solid var(--green); outline-offset: -2px; background: var(--hint) !important; }
 .sudoku-cell.prefilled { background: var(--fixed) !important; color: var(--ink); font-weight: 800; }
 .sudoku-cell.hinted { background: var(--hint) !important; color: var(--hint-ink); font-weight: 800; }
-.sudoku-cell.incorrect { background: var(--error) !important; color: var(--error-ink); }
+.sudoku-cell.incorrect, .sudoku-cell.conflict { background: var(--error) !important; color: var(--error-ink); }
 
 .controls { display: flex; flex-wrap: wrap; align-items: end; justify-content: center; gap: 9px; margin: 16px auto 0; }
 .difficulty-control { display: grid; gap: 5px; text-align: left; }

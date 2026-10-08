@@ -40,20 +40,33 @@ function startTimer() {
 
 function loadScores() {
   try {
-    const scores = JSON.parse(localStorage.getItem(SCORE_KEY) || '[]');
-    return Array.isArray(scores) ? scores.filter(score =>
-      score && typeof score.name === 'string' && Number.isFinite(score.seconds)
-    ) : [];
+    const storedScores = localStorage.getItem(SCORE_KEY);
+    if (storedScores === null) return [];
+    const scores = JSON.parse(storedScores);
+    if (!Array.isArray(scores)) return null;
+    return scores.filter(score =>
+      score &&
+      typeof score.name === 'string' &&
+      Number.isFinite(score.seconds) &&
+      score.seconds >= 0
+    );
   } catch {
-    return [];
+    return null;
   }
 }
 
 function renderScores() {
-  const scores = loadScores().sort((a, b) => a.seconds - b.seconds).slice(0, 10);
   const list = document.getElementById('score-list');
+  const emptyMessage = document.getElementById('empty-scores');
+  const scores = loadScores();
   list.replaceChildren();
-  scores.forEach((score, index) => {
+  if (scores === null) {
+    emptyMessage.textContent = 'Leaderboard unavailable because browser storage could not be read.';
+    emptyMessage.hidden = false;
+    return;
+  }
+  emptyMessage.textContent = 'Solve a puzzle to make the list.';
+  scores.sort((a, b) => a.seconds - b.seconds).slice(0, 10).forEach((score, index) => {
     const row = document.createElement('tr');
     [index + 1, score.name, formatTime(score.seconds), score.difficulty, score.hints ?? 0].forEach(value => {
       const cell = document.createElement('td');
@@ -62,7 +75,7 @@ function renderScores() {
     });
     list.appendChild(row);
   });
-  document.getElementById('empty-scores').hidden = scores.length > 0;
+  emptyMessage.hidden = scores.length > 0;
 }
 
 function saveScore(event) {
@@ -70,6 +83,10 @@ function saveScore(event) {
   const name = document.getElementById('player-name').value.trim().slice(0, 24);
   if (!name) return;
   const scores = loadScores();
+  if (scores === null) {
+    showMessage('Your browser could not read the leaderboard; this score was not saved.', 'error');
+    return;
+  }
   scores.push({
     name,
     seconds: pendingScoreSeconds,
@@ -111,12 +128,13 @@ function createBoardElement() {
     }
     boardDiv.appendChild(rowDiv);
   }
-  boardDiv.oninput = (event) => {
-    if (!event.target.matches('.sudoku-cell') || event.target.disabled) return;
-    event.target.value = event.target.value.replace(/[^1-9]/g, '').slice(0, 1);
-    event.target.classList.remove('incorrect');
-    updateMoveFeedback();
-  };
+}
+
+function handleBoardInput(event) {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement) || !input.matches('.sudoku-cell') || input.disabled) return;
+  input.value = input.value.replace(/[^1-9]/g, '').slice(0, 1);
+  updateMoveFeedback();
 }
 
 function renderPuzzle(puz) {
@@ -142,15 +160,18 @@ function renderPuzzle(puz) {
 }
 
 async function newGame() {
-  difficulty = document.getElementById('difficulty').value;
+  const newGameButton = document.getElementById('new-game');
+  const requestedDifficulty = document.getElementById('difficulty').value;
+  newGameButton.disabled = true;
   try {
-    const res = await fetch(`/new?difficulty=${difficulty}`);
+    const res = await fetch(`/new?difficulty=${requestedDifficulty}`);
     const data = await res.json();
     if (!res.ok) {
       showMessage(data.error || 'Unable to start a game.', 'error');
       return;
     }
     renderPuzzle(data.puzzle);
+    difficulty = data.difficulty;
     solved = false;
     document.getElementById('hint-count').textContent = '0';
     document.getElementById('hint-button').disabled = false;
@@ -160,6 +181,8 @@ async function newGame() {
     startTimer();
   } catch {
     showMessage('Could not connect to the game server.', 'error');
+  } finally {
+    newGameButton.disabled = false;
   }
 }
 
@@ -197,7 +220,7 @@ function updateMoveFeedback() {
   }
 
   inputs.forEach((input, idx) => {
-    if (!input.disabled) input.classList.toggle('incorrect', invalid.has(idx));
+    if (!input.disabled) input.classList.toggle('conflict', invalid.has(idx));
   });
   const message = document.getElementById('message');
   if (invalid.size) {
@@ -208,6 +231,7 @@ function updateMoveFeedback() {
 }
 
 async function checkSolution() {
+  if (solved) return;
   const inputs = [...document.querySelectorAll('.sudoku-cell')];
   try {
     const res = await fetch('/check', {
@@ -228,9 +252,10 @@ async function checkSolution() {
       solved = true;
       clearInterval(timerHandle);
       pendingScoreSeconds = elapsedSeconds();
+      document.getElementById('timer').textContent = formatTime(pendingScoreSeconds);
       document.getElementById('hint-button').disabled = true;
       document.getElementById('check-solution').disabled = true;
-      showMessage(`Solved in ${formatTime(pendingScoreSeconds)} with ${document.getElementById('hint-count').textContent} hints.`, 'success');
+      showMessage(`Congratulations! You solved it in ${formatTime(pendingScoreSeconds)} with ${document.getElementById('hint-count').textContent} hints.`, 'success');
       document.getElementById('score-entry').hidden = false;
       document.getElementById('player-name').focus();
     } else if (incorrect.size) {
@@ -284,6 +309,7 @@ function setTheme(theme) {
 
 // Wire buttons
 window.addEventListener('load', () => {
+  document.getElementById('sudoku-board').addEventListener('input', handleBoardInput);
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   document.getElementById('hint-button').addEventListener('click', requestHint);
@@ -297,6 +323,7 @@ window.addEventListener('load', () => {
   } catch {
     savedTheme = 'light';
   }
+  if (savedTheme !== 'dark') savedTheme = 'light';
   setTheme(savedTheme);
   renderScores();
   newGame();
