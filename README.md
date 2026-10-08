@@ -67,3 +67,27 @@ Use GitHub Copilot to refactor the code for this game to add more advanced featu
 - The game should be responsive and work well on both desktop and mobile devices.
 - UI colors should be visually appealing and accessible.
 - Completed and correct puzzles should display a congratulatory message with the time taken and hints used and ask for the user's name for Top 10 times.
+
+## Copilot Setup and Use
+
+Document how GitHub Copilot helped with the work. Use screenshots that show the relevant prompt or suggestion, your review of it, and the resulting change or verification. Treat Copilot as an assistant: check suggestions against the project requirements, edit or reject incorrect or inefficient output, and run the relevant tests rather than accepting generated code without review.
+
+Include evidence for these milestones:
+
+- Testing framework: show how the test framework was installed or configured, and how the tests were run.
+- Unique puzzle solutions: show the prompt and the implementation or test that verifies a generated puzzle has exactly one solution.
+- Top 10 scores: show the implementation of score recording and retrieval with local storage, including the displayed player name, time, hints, and difficulty.
+- 3×3 grid styling: show the CSS or UI change that distinguishes the 3×3 Sudoku boxes, and check that the colors remain readable and accessible.
+
+Give screenshots descriptive filenames that identify their evidence, for example `copilot_testing_framework.png`, `copilot_unique_solution_prompt.png`, `copilot_top10_scores.png`, and `copilot_grid_styling.png`. Keep them in `Screenshots/`; make sure each filename matches the actual screenshot content.
+
+### References
+
+- [GitHub Copilot configuration](https://docs.github.com/en/copilot/configuring-copilot)
+- [GitHub Copilot prompt and instruction best practices](https://docs.github.com/en/copilot/using-github-copilot/best-practices-for-writing-prompts)
+- [GitHub Blog: Copilot instructions](https://github.blog/changelog/2024-03-27-github-copilot-workflows-and-instructions/)
+- [GitHub Copilot responsible use guidelines](https://docs.github.com/en/copilot/responsible-use-of-github-copilot)
+- [W3C WCAG 2.1 contrast guidance](https://www.w3.org/WAI/WCAG21/quickref/#contrast-minimum)
+- [Sudoku hint logic example](https://medium.com/@vishalg94/sudoku-game-using-javascript-4f048a042b8e)
+- [Input validation and mistake highlighting](https://www.geeksforgeeks.org/sudoku-solver-in-javascript/)
+- [How unique Sudoku puzzles are generated](https://www.sudokuwiki.org/Sudoku_Creation_and_Grading)
